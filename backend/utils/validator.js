@@ -1,0 +1,160 @@
+class Validator {
+  // Validate patient registration
+  validatePatient(patient) {
+    const errors = [];
+
+    // University ID validation
+    if (!patient.university_id) {
+      errors.push('University ID is required');
+    }
+
+    // Full name validation
+    if (!patient.first_name || patient.first_name.trim().length < 2) {
+      errors.push('Full name is required and must be at least 2 characters');
+    }
+
+    // Gender validation
+    const validGenders = ['Male', 'Female', 'Other'];
+    if (!patient.gender || !validGenders.includes(patient.gender)) {
+      errors.push('Valid gender is required');
+    }
+
+    // Date of birth validation
+    if (!patient.date_of_birth) {
+      errors.push('Date of birth is required');
+    } else {
+      const dob = new Date(patient.date_of_birth);
+      const minAge = new Date();
+      minAge.setFullYear(minAge.getFullYear() - 120);
+      const maxAge = new Date();
+      maxAge.setFullYear(maxAge.getFullYear() - 5);
+
+      if (dob > maxAge || dob < minAge) {
+        errors.push('Invalid date of birth');
+      }
+    }
+
+    // Contact validation
+    const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+    if (!patient.contact || !phoneRegex.test(patient.contact)) {
+      errors.push('Valid contact number is required');
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!patient.email || !emailRegex.test(patient.email)) {
+      errors.push('Valid email is required');
+    }
+
+    // Campus ID validation
+    if (!patient.campus_id) {
+      errors.push('Campus ID is required');
+    }
+
+    return errors;
+  }
+
+  // Validate patient update
+  validatePatientUpdate(patient) {
+    const errors = [];
+
+    // Optional validations for update
+    if (patient.full_name && patient.full_name.trim().length < 2) {
+      errors.push('Full name must be at least 2 characters');
+    }
+
+    if (patient.gender) {
+      const validGenders = ['Male', 'Female', 'Other'];
+      if (!validGenders.includes(patient.gender)) {
+        errors.push('Invalid gender');
+      }
+    }
+
+    if (patient.date_of_birth) {
+      const dob = new Date(patient.date_of_birth);
+      const minAge = new Date();
+      minAge.setFullYear(minAge.getFullYear() - 120);
+      const maxAge = new Date();
+      maxAge.setFullYear(maxAge.getFullYear() - 5);
+
+      if (dob > maxAge || dob < minAge) {
+        errors.push('Invalid date of birth');
+      }
+    }
+
+    if (patient.contact) {
+      const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+      if (!phoneRegex.test(patient.contact)) {
+        errors.push('Invalid contact number');
+      }
+    }
+
+    if (patient.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(patient.email)) {
+        errors.push('Invalid email');
+      }
+    }
+
+    return errors;
+  }
+  // Add this method to the Validator class
+validateAppointment(appointment) {
+  const errors = [];
+
+  // Required IDs
+  if (!appointment.patient_id) errors.push('Patient ID is required');
+  if (!appointment.clinic_id) errors.push('Clinic ID is required');
+  if (!appointment.staff_id) errors.push('Staff ID is required');
+
+  // Appointment date + time validation
+ 
+  if (!appointment.appointment_time) {
+    errors.push('Appointment time is required');
+  }
+
+  // Only validate past/future when BOTH exist
+  if (appointment.appointment_date && appointment.appointment_time) {
+    // Combine date + time into one actual JS Date
+    const dateTimeString = `${appointment.appointment_date}T${appointment.appointment_time}`;
+    const appointmentDateTime = new Date(dateTimeString);
+
+    if (isNaN(appointmentDateTime.getTime())) {
+      errors.push('Invalid appointment date/time format');
+    } else {
+      const now = new Date();
+      const maxFutureDate = new Date();
+      maxFutureDate.setMonth(now.getMonth() + 3);
+
+      if (appointmentDateTime < now) {
+        errors.push('Appointment time cannot be in the past');
+      }
+      if (appointmentDateTime > maxFutureDate) {
+        errors.push('Appointment time cannot be more than 3 months in the future');
+      }
+    }
+  }
+
+  // Visit type (optional)
+  if (appointment.visit_type) {
+    const validVisitTypes = ['Regular', 'Emergency', 'Follow-up', 'Consultation'];
+    if (!validVisitTypes.includes(appointment.visit_type)) {
+      errors.push('Invalid visit type');
+    }
+  }
+
+  // Status (optional)
+  if (appointment.status) {
+    const validStatuses = ['Scheduled', 'In-Progress', 'Completed', 'Cancelled'];
+    if (!validStatuses.includes(appointment.status)) {
+      errors.push('Invalid appointment status');
+    }
+  }
+
+  return errors;
+
+
+}
+}
+
+module.exports = new Validator();
