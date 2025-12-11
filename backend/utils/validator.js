@@ -155,6 +155,124 @@ validateAppointment(appointment) {
 
 
 }
+// Add these methods to the Validator class
+validateMedicalRecord(record) {
+  const errors = [];
+
+  // Patient ID validation
+  if (!record.patient_id) {
+    errors.push('Patient ID is required');
+  }
+
+  // Appointment ID validation
+  if (!record.appointment_id) {
+    errors.push('Appointment ID is required');
+  }
+
+  // Diagnosis validation
+  if (!record.diagnosis || record.diagnosis.trim().length < 2) {
+    errors.push('Diagnosis is required and must be at least 2 characters');
+  }
+
+  // Symptoms validation
+  if (!record.symptoms) {
+    errors.push('Symptoms are required');
+  }
+
+  // Treatment validation
+  if (!record.treatment) {
+    errors.push('Treatment is required');
+  }
+
+  // Vital signs validation (optional)
+  if (record.vital_signs) {
+    const { blood_pressure, temperature, pulse, weight } = record.vital_signs;
+
+    // Blood pressure validation
+    if (!blood_pressure || !/^\d+\/\d+$/.test(blood_pressure)) {
+      errors.push('Invalid blood pressure format (e.g., 120/80)');
+    }
+
+    // Temperature validation
+    if (temperature && (temperature < 35 || temperature > 42)) {
+      errors.push('Invalid temperature');
+    }
+
+    // Pulse validation
+    if (pulse && (pulse < 40 || pulse > 200)) {
+      errors.push('Invalid pulse rate');
+    }
+
+    // Weight validation
+    if (weight && (weight < 10 || weight > 300)) {
+      errors.push('Invalid weight');
+    }
+  }
+
+  return errors;
+}
+
+validateMedicalRecordUpdate(record) {
+  const errors = [];
+
+  // Optional validations for update
+  if (record.diagnosis && record.diagnosis.trim().length < 2) {
+    errors.push('Diagnosis must be at least 2 characters');
+  }
+
+  // Vital signs validation (optional)
+  if (record.vital_signs) {
+    const { blood_pressure, temperature, pulse, weight } = record.vital_signs;
+
+    // Blood pressure validation
+    if (blood_pressure && !/^\d+\/\d+$/.test(blood_pressure)) {
+      errors.push('Invalid blood pressure format (e.g., 120/80)');
+    }
+
+    // Temperature validation
+    if (temperature && (temperature < 35 || temperature > 42)) {
+      errors.push('Invalid temperature');
+    }
+
+    // Pulse validation
+    if (pulse && (pulse < 40 || pulse > 200)) {
+      errors.push('Invalid pulse rate');
+    }
+
+    // Weight validation
+    if (weight && (weight < 10 || weight > 300)) {
+      errors.push('Invalid weight');
+    }
+  }
+
+  return errors;
+}
+
+validateFollowUpNotes(followUp) {
+  const errors = [];
+
+  // Follow-up notes validation
+  if (!followUp.follow_up_notes || followUp.follow_up_notes.trim().length < 2) {
+    errors.push('Follow-up notes are required and must be at least 2 characters');
+  }
+
+  // Next follow-up date validation
+  if (followUp.next_follow_up_date) {
+    const followUpDate = new Date(followUp.next_follow_up_date);
+    const now = new Date();
+    const maxFutureDate = new Date();
+    maxFutureDate.setMonth(now.getMonth() + 12);
+
+    if (followUpDate < now) {
+      errors.push('Follow-up date cannot be in the past');
+    }
+    if (followUpDate > maxFutureDate) {
+      errors.push('Follow-up date cannot be more than 12 months in the future');
+    }
+  }
+
+  return errors;
+}
 }
 
 module.exports = new Validator();

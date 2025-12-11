@@ -8,6 +8,10 @@ const campusClinicsRoutes = require('./routes/campus-clincs.routes.js');
 // 
 const patientRoute=require('./routes/patient.route');
 const appointmentRoutes = require('./routes/appointment.routes');
+const medicalRecordRoutes = require('./routes/medical_record.routes');
+
+
+// Add medical record routes
 
 
 
@@ -37,6 +41,9 @@ app.use('/api',patientRoute)
 
 // Add appointment routes
 app.use('/api', appointmentRoutes);
+
+// routes
+app.use('/api', medicalRecordRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
