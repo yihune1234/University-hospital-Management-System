@@ -1,4 +1,4 @@
-const { query, transaction } = require('../config/database');
+const { pool,query} = require('../config/db');
 
 class LabRequestModel { // Create a new lab request
  async createLabRequest(requestData) 
@@ -8,7 +8,7 @@ class LabRequestModel { // Create a new lab request
      test_types, 
      urgency = 'Normal', 
      notes } = requestData;
-     const connection = await query.getConnection();
+     const connection = await pool.getConnection();
 
 try {
   await connection.beginTransaction();
@@ -74,6 +74,7 @@ return {
   ...request,
   tests
 };
+}
 // Search lab requests 
 async searchLabRequests(filters) 
 {
@@ -236,6 +237,7 @@ return this.getLabRequestById(requestId);
 } finally {
   connection.release();
 }
+ }
 // Get detailed lab request with results
 async getLabRequestDetails(requestId)
  { const requestSql =`SELECT lr.*, p.full_name AS patient_name, p.university_id, s_doctor.first_name AS doctor_first_name, s_doctor.last_name AS doctor_last_name, s_tech.first_name AS technician_first_name, s_tech.last_name AS technician_last_name FROM lab_requests lr JOIN patients p ON lr.patient_id = p.patient_id JOIN staff s_doctor ON lr.doctor_id = s_doctor.staff_id LEFT JOIN staff s_tech ON lr.technician_id = s_tech.staff_id WHERE lr.request_id = ? `;
@@ -260,4 +262,4 @@ return {
 };
 } }
 
-module.exports = new LabRequestModel();
+module.exports = {LabRequestModel,labRequestModel:new LabRequestModel()};

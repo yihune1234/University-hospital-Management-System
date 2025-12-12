@@ -273,6 +273,81 @@ validateFollowUpNotes(followUp) {
 
   return errors;
 }
+
+// Add these methods to the Validator class
+validateLabRequest(request) {
+  const errors = [];
+
+  // Patient ID validation
+  if (!request.patient_id) {
+    errors.push('Patient ID is required');
+  }
+
+  // Medical Record ID validation
+  if (!request.medical_record_id) {
+    errors.push('Medical Record ID is required');
+  }
+
+  // Test types validation
+  if (!request.test_types || !Array.isArray(request.test_types) || request.test_types.length === 0) {
+    errors.push('At least one test type is required');
+  }
+
+  // Urgency validation
+  const validUrgencies = ['Normal', 'Urgent', 'Emergency'];
+  if (request.urgency && !validUrgencies.includes(request.urgency)) {
+    errors.push('Invalid urgency level');
+  }
+
+  // Notes validation (optional)
+  if (request.notes && request.notes.length > 1000) {
+    errors.push('Notes cannot exceed 1000 characters');
+  }
+
+  return errors;
+}
+
+validateLabRequestStatusUpdate(statusUpdate) {
+  const errors = [];
+
+  // Status validation
+  const validStatuses = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+  if (!statusUpdate.status || !validStatuses.includes(statusUpdate.status)) {
+    errors.push('Invalid status');
+  }
+
+  // Notes validation (optional)
+  if (statusUpdate.notes && statusUpdate.notes.length > 1000) {
+    errors.push('Notes cannot exceed 1000 characters');
+  }
+
+  return errors;
+}
+
+validateLabTestResults(results) {
+  const errors = [];
+
+  // Validate each test result
+  results.forEach((result, index) => {
+    // Test type validation
+    if (!result.test_type) {
+      errors.push(`Test type is required for result ${index + 1}`);
+    }
+
+    // Result data validation
+    if (!result.result_data) {
+      errors.push(`Result data is required for test type ${result.test_type}`);
+    }
+
+    // Status validation
+    const validStatuses = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+    if (result.status && !validStatuses.includes(result.status)) {
+      errors.push(`Invalid status for test type ${result.test_type}`);
+    }
+  });
+
+  return errors;
+}
 }
 
 module.exports = new Validator();
