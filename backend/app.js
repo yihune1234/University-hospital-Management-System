@@ -12,10 +12,12 @@ const medicalRecordRoutes = require('./routes/medical_record.routes');
 
 const labRequestRoutes = require('./routes/lab_request.routes');
 // Add medical record routes
-
-
-
+const prescriptionRoutes = require('./routes/prescription.routes');
 // Load environment variables#
+const referralRoutes = require('./routes/referral.routes');
+const billingRoutes = require('./routes/billing.routes');
+
+
 
 dotenv.config();
 
@@ -48,9 +50,19 @@ app.use('/api', medicalRecordRoutes);
 
 // ... existing middleware
 
+// Add prescription routes
+app.use('/api', prescriptionRoutes);
+
+// ... existing middleware
+
+
+// ... existing middleware
+
+// Add referral routes
+app.use('/api', referralRoutes);
 // Add lab request routes
 app.use('/api', labRequestRoutes);
-
+app.use('/api', billingRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

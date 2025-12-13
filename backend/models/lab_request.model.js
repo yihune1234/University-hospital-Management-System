@@ -1,79 +1,64 @@
-const { pool,query} = require('../config/db');
-
+const { initPool,query, transaction} = require('../config/db');
+const pool=initPool().then();
 class LabRequestModel { // Create a new lab request
- async createLabRequest(requestData) 
-{ const { patient_id, 
-    doctor_id,
-     medical_record_id, 
-     test_types, 
-     urgency = 'Normal', 
-     notes } = requestData;
-     const connection = await pool.getConnection();
-
-try {
-  await connection.beginTransaction();
-
-  // Insert lab request
-  const labRequestSql = `
-    INSERT INTO lab_requests 
-    (patient_id, doctor_id, medical_record_id, urgency, notes, status) 
-    VALUES (?, ?, ?, ?, ?, 'Pending')
-  `;
-  const labRequestResult = await connection.query(labRequestSql, [
+async createLabRequest(requestData) {
+  const { 
     patient_id,
     doctor_id,
-    medical_record_id,
-    urgency,
+    clinic_id = null,
+    test_type = null,
+    notes = null
+  } = requestData;
+
+  const sql = `
+    INSERT INTO lab_requests 
+    (patient_id, doctor_id, clinic_id, test_type, notes, status)
+    VALUES (?, ?, ?, ?, ?, 'Pending')
+  `;
+
+  const result = await query(sql, [
+    patient_id,
+    doctor_id,
+    clinic_id,
+    test_type,
     notes
   ]);
-  const requestId = labRequestResult[0].insertId;
 
-  // Insert lab request tests
-  const testInsertPromises = test_types.map(testType => {
-    const testSql = `
-      INSERT INTO lab_request_tests 
-      (request_id, test_type, status) 
-      VALUES (?, ?, 'Pending')
-    `;
-    return connection.query(testSql, [requestId, testType]);
-  });
+  // ✅ FIXED: MySQL2 returns an object, not an array
+  const requestId = result.insertId;
 
-  await Promise.all(testInsertPromises);
-
-  // Commit transaction
-  await connection.commit();
-
-  // Retrieve and return the full lab request
   return this.getLabRequestById(requestId);
-} catch (error) {
-  // Rollback transaction in case of error
-  await connection.rollback();
-  throw error;
-} finally {
-  connection.release();
 }
-}
-
 // Get lab request by ID 
-async getLabRequestById(requestId) 
-{ 
-    const requestSql = 'SELECT lr.*, p.full_name AS patient_name, s.first_name AS doctor_first_name, s.last_name AS doctor_last_name FROM lab_requests lr JOIN patients p ON lr.patient_id = p.patient_id JOIN staff s ON lr.doctor_id = s.staff_id WHERE lr.request_id = ?' ;
-    const testsSql = `
-  SELECT 
-    request_id,
-    test_type,
-    status
-  FROM lab_request_tests
-  WHERE request_id = ?
-`;
+async getLabRequestById(requestId) {
+  const requestSql = `
+    SELECT 
+      lr.*,
+      CONCAT(p.first_name, ' ', p.middle_name, ' ', p.last_name) AS patient_name,
+      s.first_name AS doctor_first_name,
+      s.last_name AS doctor_last_name
+    FROM lab_requests lr
+    JOIN patients p ON lr.patient_id = p.patient_id
+    JOIN staff s ON lr.doctor_id = s.staff_id
+    WHERE lr.request_id = ?
+  `;
 
-const [request] = await query(requestSql, [requestId]);
-const tests = await query(testsSql, [requestId]);
+  const testsSql = `
+    SELECT 
+      request_id,
+      test_type,
+      status
+    FROM lab_requests
+    WHERE request_id = ?
+  `;
 
-return {
-  ...request,
-  tests
-};
+  const [request] = await query(requestSql, [requestId]);
+  const tests = await query(testsSql, [requestId]);
+
+  return {
+    ...request,
+    tests
+  };
 }
 // Search lab requests 
 async searchLabRequests(filters) 
@@ -91,17 +76,15 @@ let sql = `
   SELECT 
     lr.request_id,
     lr.patient_id,
-    p.full_name AS patient_name,
+ concat( p.first_name,' ',p.middle_name,' ',p.last_name) AS patient_name,
     lr.doctor_id,
     s.first_name AS doctor_first_name,
     s.last_name AS doctor_last_name,
-    lr.status,
-    lr.urgency,
-    lr.created_at
+    lr.status
   FROM lab_requests lr
   JOIN patients p ON lr.patient_id = p.patient_id
   JOIN staff s ON lr.doctor_id = s.staff_id
-  LEFT JOIN lab_request_tests lrt ON lr.request_id = lrt.request_id
+  LEFT JOIN lab_requests lrt ON lr.request_id = lrt.request_id
   WHERE 1=1
 `;
 const params = [];
@@ -135,7 +118,7 @@ if (test_type) {
   params.push(test_type);
 }
 
-sql += ' GROUP BY lr.request_id ORDER BY lr.created_at DESC LIMIT ? OFFSET ?';
+sql += ' GROUP BY lr.request_id ';
 params.push(limit, offset);
 
 return await query(sql, params);
@@ -240,7 +223,7 @@ return this.getLabRequestById(requestId);
  }
 // Get detailed lab request with results
 async getLabRequestDetails(requestId)
- { const requestSql =`SELECT lr.*, p.full_name AS patient_name, p.university_id, s_doctor.first_name AS doctor_first_name, s_doctor.last_name AS doctor_last_name, s_tech.first_name AS technician_first_name, s_tech.last_name AS technician_last_name FROM lab_requests lr JOIN patients p ON lr.patient_id = p.patient_id JOIN staff s_doctor ON lr.doctor_id = s_doctor.staff_id LEFT JOIN staff s_tech ON lr.technician_id = s_tech.staff_id WHERE lr.request_id = ? `;
+ { const requestSql =`SELECT lr.*, concat( p.first_name,' ',p.middle_name,' ',p.last_name) AS patient_name,s_doctor.first_name AS doctor_first_name, s_doctor.last_name AS doctor_last_name, s_tech.first_name AS technician_first_name, s_tech.last_name AS technician_last_name FROM lab_requests lr JOIN patients p ON lr.patient_id = p.patient_id JOIN staff s_doctor ON lr.doctor_id = s_doctor.staff_id LEFT JOIN staff s_tech ON lr.technician_id = s_tech.staff_id WHERE lr.request_id = ? `;
     const testsSql = `
   SELECT 
     lrt.test_type,

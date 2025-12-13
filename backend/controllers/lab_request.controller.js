@@ -16,7 +16,7 @@ class LabRequestController {
     }
 
     // Add doctor ID from authenticated user
-    requestData.doctor_id = req.user.staffId;
+    // requestData.doctor_id = req.user.staffId;
 
     // Create lab request
     const labRequest = await labRequestModel.createLabRequest(requestData);

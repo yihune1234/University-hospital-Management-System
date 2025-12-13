@@ -101,7 +101,7 @@ const transaction = async (sqlOrQueries, params = []) => {
 };
 
 module.exports = {
-  pool,
+  initPool,
   query,
   transaction
 };
