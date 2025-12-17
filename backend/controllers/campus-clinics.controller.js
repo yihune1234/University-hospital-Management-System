@@ -147,26 +147,24 @@ class StaffScheduleController {
     const { 
       staff_id, 
       clinic_id, 
-      work_area_id, 
-      work_date, 
-      shift_type, 
+      room_id, 
+      shift_date, 
       start_time, 
       end_time, 
       status 
     } = req.body;
 
     // Validate input
-    if (!staff_id || !clinic_id || !work_area_id || !work_date || 
-        !shift_type || !start_time || !end_time) {
+    if (!staff_id || !clinic_id || !shift_date || !start_time || !end_time) {
       throw new AppError('All schedule details are required', 400);
     }
 
+    const StaffScheduleModel = require('../models/staff_schedule.model');
     const scheduleId = await StaffScheduleModel.createStaffSchedule({ 
       staff_id, 
       clinic_id, 
-      work_area_id, 
-      work_date, 
-      shift_type, 
+      room_id, 
+      shift_date, 
       start_time, 
       end_time, 
       status 
@@ -181,16 +179,17 @@ class StaffScheduleController {
     const { 
       staff_id, 
       clinic_id, 
-      work_date_start, 
-      work_date_end, 
+      start_date, 
+      end_date, 
       status 
     } = req.query;
 
+    const StaffScheduleModel = require('../models/staff_schedule.model');
     const schedules = await StaffScheduleModel.getStaffSchedules({
       staff_id, 
       clinic_id, 
-      work_date_start, 
-      work_date_end, 
+      start_date, 
+      end_date, 
       status
     });
 
@@ -206,8 +205,50 @@ class StaffScheduleController {
       throw new AppError('Invalid schedules data', 400);
     }
 
+    const StaffScheduleModel = require('../models/staff_schedule.model');
     const createdSchedules = await StaffScheduleModel.bulkCreateSchedules(schedules);
-    res.status(201).json(createdSchedules);
+    res.status(201).json({ 
+      message: 'Schedules created successfully',
+      created: createdSchedules.length 
+    });
+  }
+
+  // Update schedule
+  async updateSchedule(req, res) {
+    const { scheduleId } = req.params;
+    const scheduleData = req.body;
+
+    const StaffScheduleModel = require('../models/staff_schedule.model');
+    const schedule = await StaffScheduleModel.updateStaffSchedule(scheduleId, scheduleData);
+    res.json(schedule);
+  }
+
+  // Delete schedule
+  async deleteSchedule(req, res) {
+    const { scheduleId } = req.params;
+
+    const StaffScheduleModel = require('../models/staff_schedule.model');
+    await StaffScheduleModel.deleteSchedule(scheduleId);
+    res.json({ message: 'Schedule deleted successfully' });
+  }
+
+  // Update schedule status
+  async updateScheduleStatus(req, res) {
+    const { scheduleId } = req.params;
+    const { status } = req.body;
+
+    const StaffScheduleModel = require('../models/staff_schedule.model');
+    const schedule = await StaffScheduleModel.updateScheduleStatus(scheduleId, status);
+    res.json(schedule);
+  }
+
+  // Check conflicts
+  async checkConflicts(req, res) {
+    const scheduleData = req.body;
+
+    const StaffScheduleModel = require('../models/staff_schedule.model');
+    const conflicts = await StaffScheduleModel.getDetailedConflicts(scheduleData);
+    res.json({ conflicts });
   }
 }
 

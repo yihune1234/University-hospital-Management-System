@@ -4,10 +4,10 @@ const ReferralController = require('../controllers/referral.controller');
 const { authMiddleware, checkRole } = require('../middleware/auth.middleware');
 const asyncHandler = require('../utils/asyncHandler');
 
-// Create referral
+// Create referral (doctors only)
 router.post('/referrals', 
   authMiddleware, 
-  checkRole([3, 4]), // Doctor and Nurse roles
+  checkRole([3]), // Doctor role only
   asyncHandler(ReferralController.createReferral)
 );
 
@@ -25,10 +25,10 @@ router.get('/referrals/:referralId',
   asyncHandler(ReferralController.getReferralById)
 );
 
-// Update referral status
+// Update referral status (doctors only)
 router.patch('/referrals/:referralId/status', 
   authMiddleware,
-  checkRole([3, 4]), // Doctor and Nurse roles
+  checkRole([3]), // Doctor role only
   asyncHandler(ReferralController.updateReferralStatus)
 );
 
@@ -39,10 +39,10 @@ router.get('/referrals/:referralId/tracking-history',
   asyncHandler(ReferralController.getReferralTrackingHistory)
 );
 
-// Add referral tracking entry
+// Add referral tracking entry (doctors only)
 router.post('/referrals/:referralId/tracking-history', 
   authMiddleware,
-  checkRole([3, 4]), // Doctor and Nurse roles
+  checkRole([3]), // Doctor role only
   asyncHandler(ReferralController.addReferralTrackingEntry)
 );
 

@@ -71,6 +71,7 @@ CREATE TABLE if not exists staff (
     clinic_id INT UNSIGNED NULL,
     contact VARCHAR(50),
     email VARCHAR(255),
+    password VARCHAR(255) NOT NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -440,3 +441,57 @@ ALTER TABLE lab_results
 ADD COLUMN if not exists status ENUM('Pending','Completed','Cancelled') DEFAULT 'Pending';
 ALTER TABLE prescriptions
 ADD COLUMN if not exists duration_days INT DEFAULT 0;
+
+-- ===========================
+-- INITIAL DATA INSERTION
+-- ===========================
+
+-- Insert default roles
+INSERT IGNORE INTO roles (role_id, role_name, description) VALUES
+(1, 'Admin', 'System Administrator'),
+(2, 'Reception', 'Reception Staff'),
+(3, 'Doctor', 'Medical Doctor'),
+(4, 'Nurse', 'Nursing Staff'),
+(5, 'Lab Technician', 'Laboratory Technician'),
+(6, 'Pharmacist', 'Pharmacy Staff');
+
+-- Insert sample campuses
+INSERT IGNORE INTO campuses (campus_id, campus_name, location, status) VALUES
+(1, 'Main Campus', 'University Main Campus, City Center', 'Active'),
+(2, 'North Campus', 'University North Campus, North District', 'Active'),
+(3, 'South Campus', 'University South Campus, South District', 'Active');
+
+-- Insert sample clinics
+INSERT IGNORE INTO clinics (clinic_id, campus_id, clinic_name, clinic_type, open_time, close_time, status) VALUES
+(1, 1, 'General Medicine Clinic', 'General', '08:00:00', '17:00:00', 'Active'),
+(2, 1, 'Emergency Clinic', 'Emergency', '00:00:00', '23:59:59', 'Active'),
+(3, 2, 'Dental Clinic', 'Dental', '09:00:00', '16:00:00', 'Active'),
+(4, 3, 'Mental Health Clinic', 'Mental Health', '10:00:00', '18:00:00', 'Active');
+
+-- Insert sample work areas
+INSERT IGNORE INTO work_areas (room_id, clinic_id, room_name, room_type, capacity, status) VALUES
+(1, 1, 'Consultation Room 1', 'Consultation', 1, 'Active'),
+(2, 1, 'Consultation Room 2', 'Consultation', 1, 'Active'),
+(3, 2, 'Emergency Room 1', 'Emergency', 2, 'Active'),
+(4, 1, 'Vitals Room', 'Vitals', 3, 'Active'),
+(5, 3, 'Dental Chair 1', 'Consultation', 1, 'Active');
+
+-- Insert sample staff (with default password 'password123')
+INSERT IGNORE INTO staff (staff_id, first_name, middle_name, last_name, role_id, clinic_id, contact, email, password, is_active) VALUES
+(1, 'John', 'A', 'Admin', 1, NULL, '+1234567890', 'admin@university.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(2, 'Jane', 'B', 'Reception', 2, 1, '+1234567891', 'reception@university.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(3, 'Dr. Michael', 'C', 'Smith', 3, 1, '+1234567892', 'doctor@university.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1),
+(4, 'Sarah', 'D', 'Nurse', 4, 1, '+1234567893', 'nurse@university.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1);
+
+-- Insert sample pharmacy inventory
+INSERT IGNORE INTO pharmacy_inventory (drug_id, drug_name, brand, batch_number, stock_quantity, unit, expiry_date) VALUES
+(1, 'Paracetamol', 'Generic', 'BATCH001', 1000, 'tablets', '2025-12-31'),
+(2, 'Ibuprofen', 'Generic', 'BATCH002', 500, 'tablets', '2025-11-30'),
+(3, 'Amoxicillin', 'Generic', 'BATCH003', 200, 'capsules', '2025-10-31'),
+(4, 'Cough Syrup', 'Generic', 'BATCH004', 50, 'bottles', '2025-09-30');
+
+-- Insert sample patients
+INSERT IGNORE INTO patients (patient_id, university_id, first_name, middle_name, last_name, gender, date_of_birth, contact, email, campus_id, patient_type, is_active) VALUES
+(1, 'STU001', 'Alice', 'M', 'Johnson', 'Female', '2000-05-15', '+1234567894', 'alice.johnson@student.university.edu', 1, 'student', 1),
+(2, 'STU002', 'Bob', 'N', 'Williams', 'Male', '1999-08-22', '+1234567895', 'bob.williams@student.university.edu', 1, 'student', 1),
+(3, 'STAFF001', 'Carol', 'O', 'Brown', 'Female', '1985-03-10', '+1234567896', 'carol.brown@university.edu', 2, 'staff', 1);

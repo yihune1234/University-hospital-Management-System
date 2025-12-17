@@ -8,8 +8,8 @@ const asyncHandler = require('../utils/asyncHandler');
 
 // Create appointment
 router.post('/appointments', 
-//   authMiddleware, 
-//   checkRole([1, 2, 3]), // Admin, Reception, Doctor roles
+  authMiddleware, 
+  checkRole([1, 2, 3]), // Admin, Reception, Doctor roles
   asyncHandler(AppointmentController.createAppointment)
 );
 
@@ -60,6 +60,34 @@ router.patch('/queue/:queueId/status',
   authMiddleware,
   checkRole([1, 2, 3, 4]), // Admin, Reception, Doctor, Nurse roles
   asyncHandler(AppointmentController.updateQueueStatus)
+);
+
+// Call next patient in queue
+router.post('/clinics/:clinicId/queue/next', 
+  authMiddleware,
+  checkRole([1, 2, 3, 4]), // Admin, Reception, Doctor, Nurse roles
+  asyncHandler(AppointmentController.callNextPatient)
+);
+
+// Add patient to queue manually
+router.post('/queue/add', 
+  authMiddleware,
+  checkRole([1, 2]), // Admin, Reception roles
+  asyncHandler(AppointmentController.addToQueue)
+);
+
+// Reassign room (for nurses)
+router.patch('/appointments/:appointmentId/room', 
+  authMiddleware,
+  checkRole([1, 4]), // Admin, Nurse roles
+  asyncHandler(AppointmentController.reassignRoom)
+);
+
+// Reassign doctor (for nurses)
+router.patch('/appointments/:appointmentId/doctor', 
+  authMiddleware,
+  checkRole([1, 4]), // Admin, Nurse roles
+  asyncHandler(AppointmentController.reassignDoctor)
 );
 
 module.exports = router;

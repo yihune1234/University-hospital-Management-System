@@ -71,7 +71,7 @@ async registerPatient(patientData) {
       university_id,
       campus_id,
       patient_type,
-      status,
+      is_active,
       limit = 50,
       offset = 0
     } = filters;
@@ -109,9 +109,9 @@ async registerPatient(patientData) {
       sql += ' AND p.patient_type = ?';
       params.push(patient_type);
     }
-    if (status) {
-      sql += ' AND p.status = ?';
-      params.push(status);
+    if (is_active !== undefined) {
+      sql += ' AND p.is_active = ?';
+      params.push(is_active);
     }
 
     sql += ' LIMIT ? OFFSET ?';
@@ -132,7 +132,7 @@ async registerPatient(patientData) {
       email,
       campus_id,
       patient_type,
-      status
+      is_active
     } = patientData;
 
     const sql = `
@@ -147,7 +147,8 @@ async registerPatient(patientData) {
         email = ?, 
         campus_id = ?, 
         patient_type = ?, 
-        status = ?
+        is_active = ?,
+        updated_at = CURRENT_TIMESTAMP
       WHERE patient_id = ?
     `;
 
@@ -161,7 +162,7 @@ async registerPatient(patientData) {
       email ?? null,
       campus_id ?? null,
       patient_type ?? null,
-      status ?? null,
+      is_active ?? null,
       patientId
     ]);
 

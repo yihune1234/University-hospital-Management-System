@@ -4,7 +4,11 @@ const dotenv = require('dotenv');
 
 const { AppError, errorMiddleware } = require('./middleware/error.middleware.js');
 //
-const campusClinicsRoutes = require('./routes/campus-clincs.routes.js');
+const authRoutes = require('./routes/auth.routes.js');
+const staffRoutes = require('./routes/staff.routes.js');
+const campusClinicsRoutes = require('./routes/campus-clinics.routes.js');
+const roomRoutes = require('./routes/room.routes.js');
+const pharmacyRoutes = require('./routes/pharmacy.routes.js');
 // 
 const patientRoute=require('./routes/patient.route');
 const appointmentRoutes = require('./routes/appointment.routes');
@@ -16,7 +20,10 @@ const prescriptionRoutes = require('./routes/prescription.routes');
 // Load environment variables#
 const referralRoutes = require('./routes/referral.routes');
 const billingRoutes = require('./routes/billing.routes');
-
+const notificationRoutes = require('./routes/notification.routes');
+const auditLogRoutes = require('./routes/audit_log.routes');
+const reportsRoutes = require('./routes/reports.routes');
+const queueRoutes = require('./routes/queue.routes');
 
 
 dotenv.config();
@@ -28,13 +35,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-
-
-// ... existing middleware
-app.use(errorMiddleware)
+// Add auth routes
+app.use('/api/auth', authRoutes);
+// Add staff routes
+app.use('/api/admin', staffRoutes);
 // Add campus routes
 app.use('/api/admin', campusClinicsRoutes);
+// Add room routes
+app.use('/api/admin', roomRoutes);
+// Add pharmacy routes
+app.use('/api/pharmacy', pharmacyRoutes);
 //patients
 
 app.use('/api',patientRoute)
@@ -53,20 +63,28 @@ app.use('/api', medicalRecordRoutes);
 // Add prescription routes
 app.use('/api', prescriptionRoutes);
 
-// ... existing middleware
 
-
-// ... existing middleware
 
 // Add referral routes
 app.use('/api', referralRoutes);
 // Add lab request routes
 app.use('/api', labRequestRoutes);
 app.use('/api', billingRoutes);
-// Error handling middleware
+app.use('/api', notificationRoutes);
+app.use('/api', auditLogRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api', queueRoutes);
+
+// Error handling middleware (MUST be last)
+app.use(errorMiddleware);
+
+// Catch-all error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    message: err.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
 });
 
 const PORT = process.env.PORT || 3000;

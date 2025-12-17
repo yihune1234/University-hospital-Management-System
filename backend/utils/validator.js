@@ -667,6 +667,302 @@ validateFinancialReportParams(reportParams) {
 
   return errors;
 }
+
+// Add missing validation methods
+validateLabRequestStatusUpdate(statusData) {
+  const errors = [];
+  
+  const validStatuses = ['Pending', 'In Progress', 'Completed', 'Cancelled'];
+  if (!statusData.status || !validStatuses.includes(statusData.status)) {
+    errors.push('Invalid lab request status');
+  }
+  
+  return errors;
+}
+
+validateLabTestResults(resultsData) {
+  const errors = [];
+  
+  if (!resultsData.result_data) {
+    errors.push('Result data is required');
+  }
+  
+  return errors;
+}
+
+// Notification validation methods
+validateNotificationCreation(notificationData) {
+  const errors = [];
+  
+  if (!notificationData.staff_id) {
+    errors.push('Staff ID is required');
+  }
+  
+  if (!notificationData.message || notificationData.message.trim().length === 0) {
+    errors.push('Message is required');
+  }
+  
+  if (notificationData.message && notificationData.message.length > 1000) {
+    errors.push('Message cannot exceed 1000 characters');
+  }
+  
+  return errors;
+}
+
+validateSystemWideNotification(notificationData) {
+  const errors = [];
+  
+  if (!notificationData.message || notificationData.message.trim().length === 0) {
+    errors.push('Message is required');
+  }
+  
+  if (!notificationData.recipient_roles || !Array.isArray(notificationData.recipient_roles)) {
+    errors.push('Recipient roles must be an array');
+  }
+  
+  if (notificationData.recipient_roles && notificationData.recipient_roles.length === 0) {
+    errors.push('At least one recipient role is required');
+  }
+  
+  return errors;
+}
+
+validateContextNotification(context) {
+  const errors = [];
+  
+  if (!context.context_type) {
+    errors.push('Context type is required');
+  }
+  
+  const validContextTypes = [
+    'low_stock', 
+    'prescription_refill', 
+    'appointment_reminder', 
+    'lab_result_ready', 
+    'referral_received'
+  ];
+  
+  if (context.context_type && !validContextTypes.includes(context.context_type)) {
+    errors.push('Invalid context type');
+  }
+  
+  if (!context.recipient_roles || !Array.isArray(context.recipient_roles)) {
+    errors.push('Recipient roles must be an array');
+  }
+  
+  return errors;
+}
+// Add these methods to the Validator class
+validateNotificationCreation(notification) {
+  const errors = [];
+
+  // Recipient ID validation
+  if (!notification.recipient_id) {
+    errors.push('Recipient ID is required');
+  }
+
+  // Notification type validation
+  const validNotificationTypes = [
+    'Appointment', 
+    'Prescription', 
+    'Lab Result', 
+    'Referral', 
+    'General'
+  ];
+  if (!notification.notification_type || 
+      !validNotificationTypes.includes(notification.notification_type)) {
+    errors.push('Invalid notification type');
+  }
+
+  // Title validation
+  if (!notification.title || notification.title.trim().length < 2) {
+    errors.push('Title is required and must be at least 2 characters');
+  }
+
+  // Message validation
+  if (!notification.message || notification.message.trim().length < 2) {
+    errors.push('Message is required and must be at least 2 characters');
+  }
+
+  // Priority validation
+  const validPriorities = ['Low', 'Normal', 'High'];
+  if (notification.priority && !validPriorities.includes(notification.priority)) {
+    errors.push('Invalid priority level');
+  }
+
+  // Delivery channels validation
+  if (notification.delivery_channels) {
+    const validChannels = ['system', 'email', 'sms', 'push'];
+    const invalidChannels = notification.delivery_channels.filter(
+      channel => !validChannels.includes(channel)
+    );
+    if (invalidChannels.length > 0) {
+      errors.push(`Invalid delivery channels: ${invalidChannels.join(', ')}`);
+    }
+  }
+
+  return errors;
+}
+
+validateSystemWideNotification(notification) {
+  const errors = [];
+
+  // Notification type validation
+  const validNotificationTypes = [
+    'Appointment', 
+    'Prescription', 
+    'Lab Result', 
+    'Referral', 
+    'General',
+    'Inventory',
+    'System'
+  ];
+  if (!notification.notification_type || 
+      !validNotificationTypes.includes(notification.notification_type)) {
+    errors.push('Invalid notification type');
+  }
+
+  // Title validation
+  if (!notification.title || notification.title.trim().length < 2) {
+    errors.push('Title is required and must be at least 2 characters');
+  }
+
+  // Message validation
+  if (!notification.message || notification.message.trim().length < 2) {
+    errors.push('Message is required and must be at least 2 characters');
+  }
+
+  // Recipient roles validation
+  if (!notification.recipient_roles || 
+      !Array.isArray(notification.recipient_roles) || 
+      notification.recipient_roles.length === 0) {
+    errors.push('At least one recipient role is required');
+  }
+
+  // Priority validation
+  const validPriorities = ['Low', 'Normal', 'High'];
+  if (notification.priority && !validPriorities.includes(notification.priority)) {
+    errors.push('Invalid priority level');
+  }
+
+  return errors;
+}
+
+validateContextNotification(context) {
+  const errors = [];
+
+  // Context type validation
+  const validContextTypes = [
+    'low_stock', 
+    'prescription_refill', 
+    'appointment_reminder'
+  ];
+  if (!context.context_type || !validContextTypes.includes(context.context_type)) {
+    errors.push('Invalid context type');
+  }
+
+  // Recipient roles validation
+  if (!context.recipient_roles || 
+      !Array.isArray(context.recipient_roles) || 
+      context.recipient_roles.length === 0) {
+    errors.push('At least one recipient role is required');
+  }
+
+  return errors;
+}
+// Add these methods to the Validator class
+validateAuditLogCreation(auditLog) {
+  const errors = [];
+
+  // Staff ID validation
+  if (!auditLog.staff_id) {
+    errors.push('Staff ID is required');
+  }
+
+  // Action type validation
+  const validActionTypes = [
+    'CREATE', 'UPDATE', 'DELETE', 'VIEW', 
+    'LOGIN', 'LOGOUT', 'ACCESS', 'MODIFY'
+  ];
+  if (!auditLog.action_type || !validActionTypes.includes(auditLog.action_type)) {
+    errors.push('Invalid action type');
+  }
+
+  // Entity type validation
+  const validEntityTypes = [
+    'Patient', 'Staff', 'Prescription', 'Medical Record', 
+    'Appointment', 'Bill', 'Referral', 'Lab Request'
+  ];
+  if (!auditLog.entity_type || !validEntityTypes.includes(auditLog.entity_type)) {
+    errors.push('Invalid entity type');
+  }
+
+  // Description validation
+  if (!auditLog.description || auditLog.description.trim().length < 2) {
+    errors.push('Description is required and must be at least 2 characters');
+  }
+
+  return errors;
+}
+
+validateAuditReportParams(reportParams) {
+  const errors = [];
+
+  // Start date validation
+  if (!reportParams.start_date) {
+    errors.push('Start date is required');
+  } else {
+    const startDate = new Date(reportParams.start_date);
+    if (isNaN(startDate.getTime())) {
+      errors.push('Invalid start date');
+    }
+  }
+
+  // End date validation
+  if (!reportParams.end_date) {
+    errors.push('End date is required');
+  } else {
+    const endDate = new Date(reportParams.end_date);
+    if (isNaN(endDate.getTime())) {
+      errors.push('Invalid end date');
+    }
+  }
+
+  // Report type validation
+  const validReportTypes = ['summary', 'user_activity', 'entity_changes'];
+  if (reportParams.report_type && !validReportTypes.includes(reportParams.report_type)) {
+    errors.push('Invalid report type');
+  }
+
+  return errors;
+}
+
+validateSystemEventCreation(systemEvent) {
+  const errors = [];
+
+  // Event type validation
+  const validEventTypes = [
+    'SYSTEM_STARTUP', 'SYSTEM_SHUTDOWN', 
+    'CONFIG_CHANGE', 'SECURITY_ALERT', 
+    'PERFORMANCE_ISSUE', 'MAINTENANCE'
+  ];
+  if (!systemEvent.event_type || !validEventTypes.includes(systemEvent.event_type)) {
+    errors.push('Invalid event type');
+  }
+
+  // Description validation
+  if (!systemEvent.description || systemEvent.description.trim().length < 2) {
+    errors.push('Description is required and must be at least 2 characters');
+  }
+
+  // Severity validation
+  const validSeverities = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL'];
+  if (systemEvent.severity && !validSeverities.includes(systemEvent.severity)) {
+    errors.push('Invalid severity level');
+  }
+
+  return errors;
+}
 }
 
 

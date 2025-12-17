@@ -14,21 +14,21 @@ router.post('/medical-records',
 // Search medical records
 router.get('/medical-records', 
   authMiddleware,
-  checkRole([1, 3, 4]), // Admin, Doctor, Nurse roles
+  checkRole([1, 3, 4, 5, 6]), // Admin, Doctor, Nurse, Lab Tech, Pharmacist roles
   asyncHandler(MedicalRecordController.searchMedicalRecords)
 );
 
 // Get medical record by ID
 router.get('/medical-records/:recordId', 
   authMiddleware,
-  checkRole([1, 3, 4]), // Admin, Doctor, Nurse roles
+  checkRole([1, 3, 4, 5, 6]), // Admin, Doctor, Nurse, Lab Tech, Pharmacist roles
   asyncHandler(MedicalRecordController.getMedicalRecordById)
 );
 
 // Get detailed medical record
 router.get('/medical-records/:recordId/details', 
   authMiddleware,
-  checkRole([1, 3, 4]), // Admin, Doctor, Nurse roles
+  checkRole([1, 3, 4, 5, 6]), // Admin, Doctor, Nurse, Lab Tech, Pharmacist roles
   asyncHandler(MedicalRecordController.getMedicalRecordDetails)
 );
 

@@ -4,16 +4,21 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-
-    "start": "node app.js",
-    "dev":"nodemon app.js"
-
+    "start": "node start.js",
+    "dev": "nodemon start.js",
+    "test-db": "node test-db.js",
+    "test-auth": "node test-auth.js",
+    "check-db": "node check-db.js",
+    "create-admin": "node create-admin.js",
+    "migrate": "node migrate-db.js",
+    "app": "node app.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.6.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

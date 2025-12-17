@@ -10,22 +10,24 @@ class AppointmentModel {
       staff_id,
       room_id,
       appointment_time,
+      reason,
       status = 'Scheduled'
     } = appointmentData;
 
     const sql = `
       INSERT INTO appointments 
       (patient_id, clinic_id, staff_id, room_id,
-       appointment_time, status)
-      VALUES (?, ?, ?, ?, ?, ?)
+       appointment_time, reason, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await query(sql, [
       patient_id,
       clinic_id,
-      staff_id,
-      room_id,
+      staff_id || null,
+      room_id || null,
       appointment_time,
+      reason || null,
       status
     ]);
 
@@ -37,7 +39,7 @@ class AppointmentModel {
     const sql = `
       SELECT 
         a.*, 
-        p.full_name AS patient_name, 
+        CONCAT(p.first_name, ' ', p.last_name) AS patient_name, 
         c.clinic_name, 
         s.first_name AS staff_first_name, 
         s.last_name AS staff_last_name, 
@@ -45,7 +47,7 @@ class AppointmentModel {
       FROM appointments a
       JOIN patients p ON a.patient_id = p.patient_id
       JOIN clinics c ON a.clinic_id = c.clinic_id
-      JOIN staff s ON a.staff_id = s.staff_id
+      LEFT JOIN staff s ON a.staff_id = s.staff_id
       LEFT JOIN work_areas r ON a.room_id = r.room_id
       WHERE a.appointment_id = ?
     `;
@@ -70,19 +72,18 @@ class AppointmentModel {
       SELECT 
         a.appointment_id,
         a.patient_id,
-        p.full_name AS patient_name,
+        CONCAT(p.first_name, ' ', p.last_name) AS patient_name,
         a.clinic_id,
         c.clinic_name,
         a.staff_id,
         s.first_name AS staff_first_name,
         s.last_name AS staff_last_name,
         a.appointment_time,
-
         a.status
       FROM appointments a
       JOIN patients p ON a.patient_id = p.patient_id
       JOIN clinics c ON a.clinic_id = c.clinic_id
-      JOIN staff s ON a.staff_id = s.staff_id
+      LEFT JOIN staff s ON a.staff_id = s.staff_id
       WHERE 1=1
     `;
 
@@ -137,12 +138,38 @@ class AppointmentModel {
     const sql = `
       UPDATE appointments
       SET status = 'Cancelled',
-          cancellation_reason = ?,
+          reason = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE appointment_id = ?
     `;
 
     await query(sql, [cancellationReason, appointmentId]);
+    return this.getAppointmentById(appointmentId);
+  }
+
+  // Update appointment room
+  async updateAppointmentRoom(appointmentId, roomId) {
+    const sql = `
+      UPDATE appointments
+      SET room_id = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE appointment_id = ?
+    `;
+
+    await query(sql, [roomId, appointmentId]);
+    return this.getAppointmentById(appointmentId);
+  }
+
+  // Update appointment doctor/staff
+  async updateAppointmentDoctor(appointmentId, staffId) {
+    const sql = `
+      UPDATE appointments
+      SET staff_id = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE appointment_id = ?
+    `;
+
+    await query(sql, [staffId, appointmentId]);
     return this.getAppointmentById(appointmentId);
   }
 
@@ -171,47 +198,170 @@ class AppointmentModel {
 
   // Create waiting queue entry
   async createWaitingQueueEntry(appointmentId) {
+    // Get clinic_id for the appointment
+    const [appointment] = await query(
+      'SELECT clinic_id FROM appointments WHERE appointment_id = ?',
+      [appointmentId]
+    );
+
+    if (!appointment) {
+      throw new Error('Appointment not found');
+    }
+
+    // Get next queue number for this clinic today
+    const [maxQueue] = await query(`
+      SELECT COALESCE(MAX(wq.queue_number), 0) as max_number
+      FROM waiting_queue wq
+      JOIN appointments a ON wq.appointment_id = a.appointment_id
+      WHERE a.clinic_id = ?
+        AND DATE(a.appointment_time) = CURDATE()
+    `, [appointment.clinic_id]);
+
+    const nextQueueNumber = (maxQueue?.max_number || 0) + 1;
+
     const sql = `
       INSERT INTO waiting_queue (appointment_id, queue_number, status)
-      VALUES (
-        ?,
-        (SELECT COALESCE(MAX(queue_number), 0) + 1 
-         FROM waiting_queue 
-         WHERE appointment_id IN (
-            SELECT appointment_id FROM appointments 
-            WHERE clinic_id = (
-              SELECT clinic_id FROM appointments WHERE appointment_id = ?
-            )
-         )),
-        'Waiting'
-      )
+      VALUES (?, ?, 'Waiting')
     `;
 
-    const result = await query(sql, [appointmentId, appointmentId]);
+    const result = await query(sql, [appointmentId, nextQueueNumber]);
+    return result.insertId;
+  }
+
+  // Add patient to queue manually (walk-in)
+  async addToQueue(queueData) {
+    const { appointment_id, clinic_id } = queueData;
+
+    // Get next queue number for this clinic today
+    const [maxQueue] = await query(`
+      SELECT COALESCE(MAX(wq.queue_number), 0) as max_number
+      FROM waiting_queue wq
+      JOIN appointments a ON wq.appointment_id = a.appointment_id
+      WHERE a.clinic_id = ?
+        AND DATE(a.appointment_time) = CURDATE()
+    `, [clinic_id]);
+
+    const nextQueueNumber = (maxQueue?.max_number || 0) + 1;
+
+    const sql = `
+      INSERT INTO waiting_queue (appointment_id, queue_number, status)
+      VALUES (?, ?, 'Waiting')
+    `;
+
+    const result = await query(sql, [appointment_id, nextQueueNumber]);
     return result.insertId;
   }
 
   // Get queue for clinic
-  async getCurrentQueue(clinicId) {
-    const sql = `
+  async getCurrentQueue(clinicId, date = null) {
+    let sql = `
       SELECT 
         wq.queue_id,
         wq.queue_number,
         wq.status,
+        wq.created_at as queue_time,
         a.appointment_id,
-        p.full_name AS patient_name,
+        a.patient_id,
+        a.appointment_time,
+        a.reason,
+        CONCAT(p.first_name, ' ', COALESCE(p.middle_name, ''), ' ', p.last_name) AS patient_name,
+        p.contact AS phone_number,
         s.first_name AS staff_first_name,
-        s.last_name AS staff_last_name
+        s.last_name AS staff_last_name,
+        r.room_name
       FROM waiting_queue wq
       JOIN appointments a ON wq.appointment_id = a.appointment_id
       JOIN patients p ON a.patient_id = p.patient_id
-      JOIN staff s ON a.staff_id = s.staff_id
+      LEFT JOIN staff s ON a.staff_id = s.staff_id
+      LEFT JOIN work_areas r ON a.room_id = r.room_id
       WHERE a.clinic_id = ?
-        AND wq.status IN ('Waiting', 'In-Service')
-      ORDER BY wq.queue_number
     `;
 
-    return await query(sql, [clinicId]);
+    const params = [clinicId];
+
+    if (date) {
+      sql += ' AND DATE(a.appointment_time) = ?';
+      params.push(date);
+    } else {
+      sql += ' AND DATE(a.appointment_time) = CURDATE()';
+    }
+
+    sql += ' AND wq.status IN ("Waiting", "In-Service")';
+    sql += ' ORDER BY wq.queue_number ASC';
+
+    return await query(sql, params);
+  }
+
+  // Get queue statistics
+  async getQueueStatistics(clinicId, date = null) {
+    let sql = `
+      SELECT 
+        COUNT(*) as total_queue,
+        SUM(CASE WHEN wq.status = 'Waiting' THEN 1 ELSE 0 END) as waiting_count,
+        SUM(CASE WHEN wq.status = 'In-Service' THEN 1 ELSE 0 END) as in_service_count,
+        SUM(CASE WHEN wq.status = 'Completed' THEN 1 ELSE 0 END) as completed_count,
+        AVG(CASE 
+          WHEN wq.status = 'Completed' 
+          THEN TIMESTAMPDIFF(MINUTE, wq.created_at, wq.updated_at) 
+          ELSE NULL 
+        END) as avg_wait_time_minutes
+      FROM waiting_queue wq
+      JOIN appointments a ON wq.appointment_id = a.appointment_id
+      WHERE a.clinic_id = ?
+    `;
+
+    const params = [clinicId];
+
+    if (date) {
+      sql += ' AND DATE(a.appointment_time) = ?';
+      params.push(date);
+    } else {
+      sql += ' AND DATE(a.appointment_time) = CURDATE()';
+    }
+
+    const [stats] = await query(sql, params);
+    return stats || {
+      total_queue: 0,
+      waiting_count: 0,
+      in_service_count: 0,
+      completed_count: 0,
+      avg_wait_time_minutes: 0
+    };
+  }
+
+  // Get next patient in queue
+  async getNextInQueue(clinicId) {
+    const sql = `
+      SELECT 
+        wq.queue_id,
+        wq.queue_number,
+        a.appointment_id,
+        a.patient_id,
+        CONCAT(p.first_name, ' ', p.last_name) AS patient_name
+      FROM waiting_queue wq
+      JOIN appointments a ON wq.appointment_id = a.appointment_id
+      JOIN patients p ON a.patient_id = p.patient_id
+      WHERE a.clinic_id = ?
+        AND wq.status = 'Waiting'
+        AND DATE(a.appointment_time) = CURDATE()
+      ORDER BY wq.queue_number ASC
+      LIMIT 1
+    `;
+
+    const [nextPatient] = await query(sql, [clinicId]);
+    return nextPatient;
+  }
+
+  // Call next patient (move to In-Service)
+  async callNextPatient(clinicId) {
+    const nextPatient = await this.getNextInQueue(clinicId);
+    
+    if (!nextPatient) {
+      return null;
+    }
+
+    await this.updateQueueStatus(nextPatient.queue_id, 'In-Service');
+    return nextPatient;
   }
 
   // Update queue status
@@ -250,16 +400,16 @@ class AppointmentModel {
         sql: `
           INSERT INTO appointments 
           (patient_id, clinic_id, staff_id, room_id,
-           appointment_time, visit_type, status)
+           appointment_time, reason, status)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
         params: [
           appointment.patient_id,
           appointment.clinic_id,
-          appointment.staff_id,
-          appointment.room_id,
+          appointment.staff_id || null,
+          appointment.room_id || null,
           appointment.appointment_time,
-          appointment.visit_type || 'Regular',
+          appointment.reason || 'Regular appointment',
           appointment.status || 'Scheduled'
         ]
       });
