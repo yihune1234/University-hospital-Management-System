@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const reportsController = require('../controllers/reports.controller');
-// const { authenticateToken, authorizeRoles } = require('../middleware/auth.middleware');
+const { authMiddleware, checkRole } = require('../middleware/auth.middleware');
 
-// // All report routes require authentication and admin role
-// router.use(authenticateToken);
-// router.use(authorizeRoles('Admin'));
+// All report routes require authentication, admin (1) or manager (8) role
+router.use(authMiddleware);
+router.use(checkRole([1, 8]));
 
 // Patient Reports
 router.get('/patients/overview', reportsController.getPatientOverview);

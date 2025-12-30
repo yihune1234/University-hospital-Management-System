@@ -24,7 +24,7 @@ function RoleManagement() {
       setLoading(true);
       const [usersRes, rolesRes] = await Promise.all([
         api.get('/admin/staff'),
-        api.get('/auth/roles')
+        api.get('/admin/roles')
       ]);
       setUsers(usersRes.data || []);
       setRoles(rolesRes.data || []);

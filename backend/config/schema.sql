@@ -453,7 +453,9 @@ INSERT IGNORE INTO roles (role_id, role_name, description) VALUES
 (3, 'Doctor', 'Medical Doctor'),
 (4, 'Nurse', 'Nursing Staff'),
 (5, 'Lab Technician', 'Laboratory Technician'),
-(6, 'Pharmacist', 'Pharmacy Staff');
+(6, 'Pharmacist', 'Pharmacy Staff'),
+(7, 'Cashier', 'Billing and Payments'),
+(8, 'Manager', 'Hospital Management');
 
 -- Insert sample campuses
 INSERT IGNORE INTO campuses (campus_id, campus_name, location, status) VALUES

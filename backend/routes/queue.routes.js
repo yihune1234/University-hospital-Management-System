@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const queueController = require('../controllers/queue.controller');
-const { authenticateToken } = require('../middleware/auth.middleware');
+const { authMiddleware } = require('../middleware/auth.middleware');
 
 // All queue routes require authentication
-// router.use(authenticateToken);
+router.use(authMiddleware);
 
 // Get clinic queue with statistics
 router.get('/clinics/:clinicId/queue', queueController.getClinicQueue);
